@@ -18,7 +18,7 @@ if ($install -eq $true){
     New-Item "$path" -type directory | Out-Null
     Set-Location "$path"
     if (!(Get-Location) -eq "$path") {Write-Output "Kan ikke gå i $path"; pause; break}
-    Invoke-WebRequest "https://raw.githubusercontent.com/ljskatt/Blink1-Telia/master/main.ps1" -OutFile "$path\main.ps1"
+    Invoke-WebRequest "https://raw.githubusercontent.com/officecenter/blink1-telia/master/main.ps1" -OutFile "$path\main.ps1"
     @{blink_delay="$delay"} | ConvertTo-Json | Out-File "$path\config.json"
     Invoke-WebRequest "http://thingm.com/blink1/downloads/blink1-tool-win.zip" -OutFile "$path\blink1.zip"
     Expand-Archive blink1.zip
@@ -46,7 +46,7 @@ if ($install -eq $true){
 
     [System.Windows.MessageBox]::Show("Takk for at du installerte Blink1-Telia.
     En snarvei til programmet skal være lagt til på Skrivebordet og Start-Menyen.
-    Vær vennlig og rapporter bugs på https://github.com/ljskatt/blink1-telia",'Blink1-Telia','Ok','Info') | Out-Null
+    Vær vennlig og rapporter bugs på https://github.com/officecenter/blink1-telia",'Blink1-Telia','Ok','Info') | Out-Null
 }
 else {
     [System.Windows.MessageBox]::Show("Blink1-Telia er allerede installert i mappen
