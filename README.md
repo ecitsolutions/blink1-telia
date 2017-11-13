@@ -8,7 +8,7 @@
 
 ### Installasjon
 
- 1. Last ned zip filen [her](https://github.com/ljskatt/Blink1-Telia/releases)
+ 1. Last ned zip filen [her](https://github.com/officecenter/Blink1-Telia/releases)
  2. Pakk ut filene
  3. Kjør "RUN ME"
  3. Følg installasjonsveiledningen videre
