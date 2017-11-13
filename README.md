@@ -65,6 +65,7 @@ Dette anbefales når du skal avslutte programmet, eller så kan man risikere at 
 Blink1-Telia er bygd oppå [todbot sin blink1-tool.exe](https://github.com/todbot/blink1), exe filen blir lastet ned automatisk av Blink1-Telia under installasjon.
 
 License: [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+
 Todbot sin [License](https://github.com/todbot/blink1/blob/master/LICENSE.txt) 
 
-[Blink1-Telia License](https://github.com/ljskatt/Blink1-Telia/blob/master/LICENSE.txt)
+[Blink1-Telia License](https://github.com/officecenter/Blink1-Telia/blob/master/LICENSE.txt)
