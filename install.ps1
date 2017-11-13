@@ -19,7 +19,7 @@ if ($install -eq $true){
     Set-Location "$path"
     if (!(Get-Location) -eq "$path") {Write-Output "Kan ikke gå i $path"; pause; break}
     Invoke-WebRequest "https://raw.githubusercontent.com/officecenter/blink1-telia/master/main.ps1" -OutFile "$path\main.ps1"
-    @{blink_delay="$delay"} | ConvertTo-Json | Out-File "$path\config.json"
+    @{blink_delay=$delay; busy_delay=60; username=$null; usersave=$false} | ConvertTo-Json | Out-File "$path\config.json"
     Invoke-WebRequest "http://thingm.com/blink1/downloads/blink1-tool-win.zip" -OutFile "$path\blink1.zip"
     Expand-Archive blink1.zip
     Move-Item "$path\blink1\blink1-tool.exe" "$path\blink1-tool.exe"

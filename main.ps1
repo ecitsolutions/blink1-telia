@@ -2,13 +2,29 @@
 $new_delay = $args[0]
 $new_config = $args[0] -match '^[0-9]+$'
 
+$config = Get-Content -Raw -Path "$path\config.json" | ConvertFrom-Json
+
+if ($config.busy_delay -eq $null){
+    @{blink_delay=$config.blink_delay; busy_delay=60; username=$config.username; usersave=$config.usersave} | ConvertTo-Json | Out-File "$path\config.json"
+    $config.busy_delay = 60
+}
+
 if ($new_config -eq $true) {
-    @{blink_delay="$new_delay"} | ConvertTo-Json | Out-File "$path\config.json"
+    $config = Get-Content -Raw -Path "$path\config.json" | ConvertFrom-Json
+    @{blink_delay=$new_delay; busy_delay=$config.busy_delay; username=$config.username; usersave=$config.usersave} | ConvertTo-Json | Out-File "$path\config.json"
     Write-Host "Blink-Delay endret til $new_delay ms"
     break
 }
 
-$config = Get-Content -Raw -Path "$path\config.json" | ConvertFrom-Json
+if ($config.blink_delay -eq $null){
+    @{blink_delay=600; busy_delay=$config.busy_delay; username=$config.username; usersave=$config.usersave} | ConvertTo-Json | Out-File "$path\config.json"
+    $config.blink_delay = 600
+}
+
+if ($config.usersave -eq $null){
+    @{blink_delay=$config.blink_delay; busy_delay=$config.busy_delay; username=$config.username; usersave=$false} | ConvertTo-Json | Out-File "$path\config.json"
+    $config.usersave = $false
+}
 
 #Stopp Telia status loopen
 function Stop-Telia {
@@ -27,13 +43,14 @@ While ($validate -eq $null) {
 
     $form = New-Object System.Windows.Forms.Form 
     $form.Text = "Logg inn på Telia"
-    $form.Size = New-Object System.Drawing.Size(300,225)
+    $form.Size = New-Object System.Drawing.Size(300,325)
     $form.StartPosition = "CenterScreen"
     $form.Icon = [system.drawing.icon]::ExtractAssociatedIcon($PSHOME + "\powershell.exe")
     $form.Topmost = $true
+    $Form.FormBorderStyle = "FixedSingle"
 
     $OKButton = New-Object System.Windows.Forms.Button
-    $OKButton.Location = New-Object System.Drawing.Point(115,145)
+    $OKButton.Location = New-Object System.Drawing.Point(115,245)
     $OKButton.Size = New-Object System.Drawing.Size(75,30)
     $OKButton.Text = "OK"
     $OKButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
@@ -41,7 +58,7 @@ While ($validate -eq $null) {
     $form.Controls.Add($OKButton)
 
     $CancelButton = New-Object System.Windows.Forms.Button
-    $CancelButton.Location = New-Object System.Drawing.Point(195,145)
+    $CancelButton.Location = New-Object System.Drawing.Point(195,245)
     $CancelButton.Size = New-Object System.Drawing.Size(75,30)
     $CancelButton.Text = "Cancel"
     $CancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
@@ -49,39 +66,95 @@ While ($validate -eq $null) {
     $form.Controls.Add($CancelButton)
 
     $label1 = New-Object System.Windows.Forms.Label
-    $label1.Location = New-Object System.Drawing.Point(10,20)
+    $label1.Location = New-Object System.Drawing.Point(10,10)
     $label1.Size = New-Object System.Drawing.Size(280,20)
     $label1.Text = "Fyll inn ditt Telia-brukernavn:"
     $form.Controls.Add($label1)
 
     $label2 = New-Object System.Windows.Forms.Label
-    $label2.Location = New-Object System.Drawing.Point(10,80)
+    $label2.Location = New-Object System.Drawing.Point(10,90)
     $label2.Size = New-Object System.Drawing.Size(280,20)
     $label2.Text = "Fyll inn ditt Telia-passord:"
     $form.Controls.Add($label2)
+    
+    $label3 = New-Object System.Windows.Forms.Label
+    $label3.Location = New-Object System.Drawing.Point(10,140)
+    $label3.Size = New-Object System.Drawing.Size(280,20)
+    $label3.Text = "Sekunder mellom samtale-slutt og endring av farge:"
+    $form.Controls.Add($label3)
+    
+    $label4 = New-Object System.Windows.Forms.Label
+    $label4.Location = New-Object System.Drawing.Point(10,190)
+    $label4.Size = New-Object System.Drawing.Size(280,20)
+    $label4.Text = "Millisekunder mellom fargebytte:"
+    $form.Controls.Add($label4)
 
-    $brukernavn = New-Object System.Windows.Forms.TextBox 
-    $brukernavn.Location = New-Object System.Drawing.Point(10,40) 
-    $brukernavn.Size = New-Object System.Drawing.Size(260,20) 
-    $form.Controls.Add($brukernavn)
+    $username = New-Object System.Windows.Forms.TextBox 
+    $username.Location = New-Object System.Drawing.Point(10,30) 
+    $username.Size = New-Object System.Drawing.Size(260,20)
+    if (!($config.username -eq $null)){
+        $username.Text = $config.username
+    }
+    $form.Controls.Add($username)
 
-    $passord = New-Object System.Windows.Forms.TextBox
-    $passord.PasswordChar = '*'
-    $passord.Location = New-Object System.Drawing.Point(10,100) 
-    $passord.Size = New-Object System.Drawing.Size(260,20) 
-    $form.Controls.Add($passord)
+    $remember = New-Object System.Windows.Forms.Checkbox
+    $remember.Location = New-Object System.Drawing.Size(10,60) 
+    $remember.Size = New-Object System.Drawing.Size(120,20)
+    $remember.Text = "Husk brukernavn"
+    if ($config.usersave -eq $true){
+        $remember.Checked = $true
+    }
+    else {
+        $remember.Checked = $false
+    }
+    $form.Controls.Add($remember)
 
-    $form.Topmost = $True
-
+    $password = New-Object System.Windows.Forms.TextBox
+    $password.PasswordChar = '*'
+    $password.Location = New-Object System.Drawing.Point(10,110) 
+    $password.Size = New-Object System.Drawing.Size(260,20) 
+    $form.Controls.Add($password)
+    
+    $busydelay = New-Object System.Windows.Forms.NumericUpDown
+    $busydelay.Location = New-Object System.Drawing.Point(10,160) 
+    $busydelay.Size = New-Object System.Drawing.Size(260,20)
+    $busydelay.Maximum = 600
+    $busydelay.Value = $config.busy_delay
+    $busydelay.Increment = 5
+    $form.Controls.Add($busydelay)
+    
+    $blinkdelay = New-Object System.Windows.Forms.NumericUpDown
+    $blinkdelay.Location = New-Object System.Drawing.Point(10,210) 
+    $blinkdelay.Size = New-Object System.Drawing.Size(260,20)
+    $blinkdelay.Maximum = 5000
+    $blinkdelay.Value = $config.blink_delay
+    $blinkdelay.Increment = 10
+    $form.Controls.Add($blinkdelay)
+    
     & $path\blink1-tool.exe -m $config.blink_delay --cyan | Out-Null
     $result = $form.ShowDialog()
+
+    if ($remember.Checked -eq $true){
+        if ($username.Text -eq ""){
+            $config.username = $null
+        }
+        else {
+            $config.username = $username.Text
+        }
+        $config.usersave = $true
+    }
+    else {
+        $config.username = $null
+        $config.usersave = $false
+    }
+    
+    @{blink_delay=$blinkdelay.Value; busy_delay=$busydelay.Value; username=$config.username; usersave=$config.usersave} | ConvertTo-Json | Out-File "$path\config.json"
+    $config.blink_delay = $blinkdelay.Value
+    $config.busy_delay = $busydelay.Value
+
     if ($result -eq "OK"){
 
-        $postParams = @{
-            loginName=$brukernavn.Text
-            loginPassword=$passord.Text
-        }
-
+        $postParams = @{loginName=$username.Text; loginPassword=$password.Text}
         Invoke-RestMethod -uri 'https://sb.telia.no/bn/login' -Method Post -Body $postParams -SessionVariable session | Out-Null
 
         $req = $null
@@ -116,8 +189,19 @@ $telia = {
         $req = Invoke-RestMethod -Uri 'https://sb.telia.no/api/call/active' -Method POST -WebSession $session
 
         if ($req.error -eq $false){
-            if($req.activecall.agent){& $path\blink1-tool.exe -m $config.blink_delay --red}
-            else {& $path\blink1-tool.exe -m $config.blink_delay --green}
+            if($req.activecall.agent){
+                & $path\blink1-tool.exe -m $config.blink_delay --red
+                $busy = 1
+            }
+            else {
+                if ($busy -eq 1){
+                    Start-Sleep $config.busy_delay
+                    $busy = 0
+                }
+                else {
+                    & $path\blink1-tool.exe -m $config.blink_delay --green
+                }
+            }
             Start-Sleep 3
         }
         else {
