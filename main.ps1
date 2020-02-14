@@ -152,11 +152,17 @@ While ($validate -eq $null) {
     $config.blink_delay = $blinkdelay.Value
     $config.busy_delay = $busydelay.Value
 
+    $session = "0"
     if ($result -eq "OK"){
+        # Get token and session
+        $rtoken_raw = Invoke-WebRequest -uri 'https://sb.telia.no/bn/login' -Method GET -SessionVariable session
+        $rtoken = $rtoken_raw.Forms[0].Fields.r
 
-        $postParams = @{loginName=$username.Text; loginPassword=$password.Text}
-        Invoke-RestMethod -uri 'https://sb.telia.no/bn/login' -Method Post -Body $postParams -SessionVariable session | Out-Null
+        # Log in
+        $postParams = @{loginName=$username.Text; loginPassword=$password.Text; r=$rtoken}
+        Invoke-RestMethod -uri 'https://sb.telia.no/bn/login' -Method Post -Body $postParams -WebSession $session
 
+        # Request to evaluate login
         $req = $null
         $req = Invoke-RestMethod -Uri 'https://sb.telia.no/api/call/active' -Method POST -WebSession $session
 
@@ -184,30 +190,40 @@ $telia = {
     Invoke-RestMethod -uri 'https://sb.telia.no/bn/login' -Method Post -Body $postParams -SessionVariable session | Out-Null
 
     # Loop
+    $min_time = Get-Date '08:00'
+    $max_time = Get-Date '16:00'
     While ($true) {
-        $req = $null
-        $req = Invoke-RestMethod -Uri 'https://sb.telia.no/api/call/active' -Method POST -WebSession $session
+        $now_time = Get-Date
+        if ($min_time.TimeOfDay -le $now_time.TimeOfDay -and $max_time.TimeOfDay -ge $now_time.TimeOfDay) {
+            $req = $null
+            $req = Invoke-RestMethod -Uri 'https://sb.telia.no/api/call/active' -Method POST -WebSession $session
 
-        if ($req.error -eq $false){
-            if($req.activecall.agent){
-                & $path\blink1-tool.exe -m $config.blink_delay --red
-                $busy = 1
-            }
-            else {
-                if ($busy -eq 1){
-                    Start-Sleep $config.busy_delay
-                    $busy = 0
+            if ($req.error -eq $false){
+                if($req.activecall.agent){
+                    & $path\blink1-tool.exe -m $config.blink_delay --red
+                    $busy = 1
                 }
                 else {
-                    & $path\blink1-tool.exe -m $config.blink_delay --green
+                    if ($busy -eq 1){
+                        Start-Sleep $config.busy_delay
+                        $busy = 0
+                    }
+                    else {
+                        & $path\blink1-tool.exe -m $config.blink_delay --green
+                    }
                 }
+                Start-Sleep 3
             }
-            Start-Sleep 3
+            else {
+                & $path\blink1-tool.exe -m $config.blink_delay --yellow
+                Start-Sleep 5
+            }
         }
         else {
-            & $path\blink1-tool.exe -m $config.blink_delay --yellow
-            Start-Sleep 5
+            & $path\blink1-tool.exe --off
+            start-Sleep 60
         }
+        
     }
 }
 
